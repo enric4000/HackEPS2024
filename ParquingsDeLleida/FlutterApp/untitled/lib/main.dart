@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF165d4f)),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Parkings de Lleida'),
+      home: const MyHomePage(title: 'Parquings de Lleida'),
     );
   }
 }
@@ -39,20 +39,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
   late GoogleMapController _mapController;
 
-  final LatLng _initialPosition = const LatLng(41.60686667118134, 0.6254122464744745); // Coordenadas del parking de lleida ;)
+  final LatLng _initialPosition = const LatLng(41.60686667118134, 0.6254122464744745); // Coordenadas del parquing de la UDL :3
   final Set<Marker> _markers = {};
 
-  //Geters al server de Django para actualizar la app, se llama cadavez que se pulsa un boton
+  //Conexio amb el server Django que retorna un JSON
   Future<void> fetchData(String type) async {
     final url = Uri.parse('http://192.168.43.52:8000/aparcaments/API/1/');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        plazOcup = data['places_ocupades'];
-        plazTotal = data['places_totals'];
-        plazLib = data['plazas_libres'];
-        setState(() {});
+        setState(() {
+          plazOcup = data['places_ocupades'];
+          plazTotal = data['places_totals'];
+          plazLib = data['plazas_libres'];
+        });
       } else {
         print('Error: ${response.statusCode}');
       }
@@ -61,42 +62,43 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> Request1() async {
-    final url = Uri.parse('http://192.168.43.52:8000/aparcaments/1/update/'); 
+  //Conexio amb el server Django per disminuir una plaza
+  Future<void> registrarEntrada() async {
+    final url = Uri.parse('http://192.168.43.52:8000/aparcaments/1/update/');
     try {
       final response = await http.post(url);
       if (response.statusCode == 200) {
-        print('Respuesta Mock 1: ${response.body}');
+        print('Entrada registrada: ${response.body}');
       } else {
-        print('Error Request 1: ${response.statusCode}');
-
+        print('Error al registrar entrada: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error al realizar la solicitud Mock 1: $e');
+      print('Error al realizar la solicitud: $e');
     }
-    fetchData("lliure");
+    fetchData("libre");
   }
 
-  Future<void> Request2() async {
+  //Conexio amb el server Django per augmentar una plaza lliure
+  Future<void> registrarSalida() async {
     final url = Uri.parse('http://192.168.43.52:8000/aparcaments/1/update/');
     try {
       final response = await http.delete(url);
       if (response.statusCode == 200) {
+        print('Salida registrada: ${response.body}');
       } else {
-        print('Error Request 2: ${response.statusCode}');
+        print('Error al registrar salida: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error al realizar la solicitud Mock 2: $e');
+      print('Error al realizar la solicitud: $e');
     }
-    fetchData("lliure");
+    fetchData("libre");
   }
 
   @override
   void initState() {
     super.initState();
-    fetchData("lliure");
+    fetchData("libre");
 
-    // Inicializar marcador de google maps en la ubicación inicial, al lado de la uni de Lleida
     _markers.add(
       Marker(
         markerId: const MarkerId('initial_location'),
@@ -180,24 +182,26 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
             const SizedBox(height: 40),
-            
-            SizedBox(
-              height: 400,
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: _initialPosition,
-                  zoom: 16,
+            GestureDetector(
+              onVerticalDragUpdate: (_) {},
+              child: SizedBox(
+                height: 400,
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _initialPosition,
+                    zoom: 16,
+                  ),
+                  markers: _markers,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  myLocationEnabled: true,
+                  zoomControlsEnabled: true,
+                  scrollGesturesEnabled: true,
+                  zoomGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  rotateGesturesEnabled: true,
                 ),
-                markers: _markers,
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                },
-                myLocationEnabled: true,
-                zoomControlsEnabled: true,
-                scrollGesturesEnabled: true,
-                zoomGesturesEnabled: true,
-                tiltGesturesEnabled: true,
-                rotateGesturesEnabled: true,
               ),
             ),
             const SizedBox(height: 40),
@@ -207,9 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 SizedBox(
                   width: 150,
                   child: TextButton(
-                    onPressed: () {
-                      Request1();
-                    },
+                    onPressed: registrarEntrada,
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       backgroundColor: Colors.blue,
@@ -222,9 +224,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 SizedBox(
                   width: 150,
                   child: TextButton(
-                    onPressed: () {
-                      Request2();
-                    },
+                    onPressed: registrarSalida,
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       backgroundColor: Colors.blue,
